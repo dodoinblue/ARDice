@@ -13,6 +13,7 @@ import ARKit
 class ViewController: UIViewController, ARSCNViewDelegate {
 
     @IBOutlet var sceneView: ARSCNView!
+    var dices = [SCNNode]()
 
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -112,13 +113,34 @@ class ViewController: UIViewController, ARSCNViewDelegate {
                 if let diceNode = diceScene.rootNode.childNode(withName: "Dice", recursively: true) {
                     diceNode.position = SCNVector3(
                         x: hitResult.worldTransform.columns.3.x,
-                        y: hitResult.worldTransform.columns.3.y,
+                        y: hitResult.worldTransform.columns.3.y + diceNode.boundingSphere.radius,
                         z: hitResult.worldTransform.columns.3.z)
                     // Set the scene to the view
                     sceneView.scene.rootNode.addChildNode(diceNode)
+                    
+                    roll(diceNode)
+                    dices.append(diceNode)
                 }
             }
         }
+    }
+    
+    func rollAll() {
+        if !dices.isEmpty {
+            for dice in dices {
+                roll(dice)
+            }
+        }
+    }
+    
+    func roll(_ dice: SCNNode) {
+        let randomX = Float(arc4random_uniform(4) + 1) * Float.pi / 2
+        let randomZ = Float(arc4random_uniform(4) + 1) * Float.pi / 2
+        dice.runAction(SCNAction.rotateBy(x: CGFloat(randomX), y: 0, z: CGFloat(randomZ), duration: 0.5))
+    }
+    
+    override func motionEnded(_ motion: UIEventSubtype, with event: UIEvent?) {
+        rollAll()
     }
 /*
     // Override to create and configure nodes for anchors added to the view's session.
