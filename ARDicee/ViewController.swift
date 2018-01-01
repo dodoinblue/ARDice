@@ -142,7 +142,14 @@ class ViewController: UIViewController, ARSCNViewDelegate {
     override func motionEnded(_ motion: UIEventSubtype, with event: UIEvent?) {
         rollAll()
     }
-/*
+    @IBAction func removeAllDice(_ sender: Any) {
+        if !dices.isEmpty {
+            for dice in dices {
+                dice.removeFromParentNode()
+            }
+        }
+    }
+    /*
     // Override to create and configure nodes for anchors added to the view's session.
     func renderer(_ renderer: SCNSceneRenderer, nodeFor anchor: ARAnchor) -> SCNNode? {
         let node = SCNNode()
