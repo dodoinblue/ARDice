@@ -23,11 +23,34 @@ class ViewController: UIViewController, ARSCNViewDelegate {
         // Show statistics such as fps and timing information
         sceneView.showsStatistics = true
         
-        // Create a new scene
-        let scene = SCNScene(named: "art.scnassets/ship.scn")!
+        let sunPosition = SCNVector3(x: 0.1, y: 0, z: -3)
+        let nodeSun = createSphere(radius: 1, surfaceImgUri: "art.scnassets/sun.jpg", position: sunPosition)
+        let earthPosition = SCNVector3(x: 0, y: 0.1, z: -0.5)
+        let nodeEarth = createSphere(radius: 0.1, surfaceImgUri: "art.scnassets/earth_daymap.jpg", position: earthPosition)
+        let moonPosition = SCNVector3(x: 0.1, y: 0, z: -0.5)
+        let nodeMoon = createSphere(radius: 0.02, surfaceImgUri: "art.scnassets/moon.jpg", position: moonPosition)
+        sceneView.scene.rootNode.addChildNode(nodeEarth)
+        sceneView.scene.rootNode.addChildNode(nodeMoon)
+        sceneView.scene.rootNode.addChildNode(nodeSun)
+        sceneView.autoenablesDefaultLighting = true
         
-        // Set the scene to the view
-        sceneView.scene = scene
+//        // Create a new scene
+//        let scene = SCNScene(named: "art.scnassets/ship.scn")!
+//
+//        // Set the scene to the view
+//        sceneView.scene = scene
+    }
+    
+    func createSphere(radius: CGFloat, surfaceImgUri: String, position: SCNVector3) -> SCNNode {
+        let sphere = SCNSphere(radius: radius)
+        let material = SCNMaterial()
+        material.diffuse.contents = UIImage(named: surfaceImgUri)
+        sphere.materials = [material]
+        
+        let node = SCNNode()
+        node.position = position
+        node.geometry = sphere
+        return node
     }
     
     override func viewWillAppear(_ animated: Bool) {
