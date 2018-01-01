@@ -13,12 +13,10 @@ import ARKit
 class ViewController: UIViewController, ARSCNViewDelegate {
 
     @IBOutlet var sceneView: ARSCNView!
-    
-    var animations = [String: CAAnimation]()
-    var idle: Bool = true
 
     override func viewDidLoad() {
         super.viewDidLoad()
+        self.sceneView.debugOptions = [ARSCNDebugOptions.showFeaturePoints]
         
         // Set the view's delegate
         sceneView.delegate = self
@@ -38,25 +36,15 @@ class ViewController: UIViewController, ARSCNViewDelegate {
         sceneView.autoenablesDefaultLighting = true
         
         // Create a new scene
-        // Set the scene to the view
-        sceneView.scene = SCNScene()
-        
-        let scene = SCNScene(named: "art.scnassets/MaryJaneDancing.scn")!
-        
-        let node = SCNNode()
-        for child in scene.rootNode.childNodes {
-            node.addChildNode(child)
-        }
-        
-        // Set up some properties
-        node.position = SCNVector3(0, -1, -2)
-        node.scale = SCNVector3(0.2, 0.2, 0.2)
-        print("\(node)")
-        node.animationPlayer(forKey: "mixamorig_Hips")?.play()
-        sceneView.scene.rootNode.addChildNode(node)
-//        loadAnimation(withKey: "dancing", sceneName: "art.scnassets/MaryJaneDancing.scn", animationIdentifier: "twist_danceFixed-1")
+//        let diceScene = SCNScene(named: "art.scnassets/diceCollada.scn")!
+//        if let diceNode = diceScene.rootNode.childNode(withName: "Dice", recursively: true) {
+//            diceNode.position = SCNVector3(x: 0, y: 0, z: -0.1)
+//            // Set the scene to the view
+//            sceneView.scene.rootNode.addChildNode(diceNode)
+//        }
+
     }
-    
+
     func createSphere(radius: CGFloat, surfaceImgUri: String, position: SCNVector3) -> SCNNode {
         let sphere = SCNSphere(radius: radius)
         let material = SCNMaterial()
@@ -69,63 +57,21 @@ class ViewController: UIViewController, ARSCNViewDelegate {
         return node
     }
     
-    func loadAnimation(withKey: String, sceneName:String, animationIdentifier:String) {
-        let sceneURL = Bundle.main.url(forResource: sceneName, withExtension: "dae")
-        let sceneSource = SCNSceneSource(url: sceneURL!, options: nil)
+    func createDice() {
         
-        if let animationObject = sceneSource?.entryWithIdentifier(animationIdentifier, withClass: CAAnimation.self) {
-            // The animation will only play once
-            animationObject.repeatCount = 1
-            // To create smooth transitions between animations
-            animationObject.fadeInDuration = CGFloat(1)
-            animationObject.fadeOutDuration = CGFloat(0.5)
-            
-            // Store the animation for later use
-            animations[withKey] = animationObject
-        }
-    }
-    
-//    override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
-//        let location = touches.first!.location(in: sceneView)
-//
-//        // Let's test if a 3D Object was touch
-//        var hitTestOptions = [SCNHitTestOption: Any]()
-//        hitTestOptions[SCNHitTestOption.boundingBoxOnly] = true
-//
-//        let hitResults: [SCNHitTestResult]  = sceneView.hitTest(location, options: hitTestOptions)
-//
-//        if hitResults.first != nil {
-//            if(idle) {
-//                playAnimation(key: "dancing")
-//            } else {
-//                stopAnimation(key: "dancing")
-//            }
-//            idle = !idle
-//            return
-//        }
-//    }
-    
-    func playAnimation(key: String) {
-        // Add the animation to start playing it right away
-        sceneView.scene.rootNode.addAnimation(animations[key]!, forKey: key)
-    }
-    
-    func stopAnimation(key: String) {
-        // Stop the animation with a smooth transition
-        sceneView.scene.rootNode.removeAnimation(forKey: key, blendOutDuration: CGFloat(0.5))
     }
 
-    
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
         
         // Create a session configuration
         let configuration = ARWorldTrackingConfiguration()
+        configuration.planeDetection = .horizontal
 
         // Run the view's session
         sceneView.session.run(configuration)
     }
-    
+
     override func viewWillDisappear(_ animated: Bool) {
         super.viewWillDisappear(animated)
         
@@ -139,7 +85,41 @@ class ViewController: UIViewController, ARSCNViewDelegate {
     }
 
     // MARK: - ARSCNViewDelegate
+    func renderer(_ renderer: SCNSceneRenderer, didAdd node: SCNNode, for anchor: ARAnchor) {
+        if anchor is ARPlaneAnchor {
+            let planeAnchor = anchor as! ARPlaneAnchor
+            let plane = SCNPlane(width: CGFloat(planeAnchor.extent.x), height: CGFloat(planeAnchor.extent.z))
+            
+            let planeNode = SCNNode()
+            
+            planeNode.position = SCNVector3(x: planeAnchor.center.x, y: 0, z: planeAnchor.center.z)
+            planeNode.transform = SCNMatrix4MakeRotation(-Float.pi/2, 1, 0, 0)
+            let gridMaterial = SCNMaterial()
+            gridMaterial.diffuse.contents = UIImage(named: "art.scnassets/grid.png")
+            plane.materials = [gridMaterial]
+            planeNode.geometry = plane
+            node.addChildNode(planeNode)
+        }
+    }
     
+    override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
+        if let touch = touches.first {
+            let touchLocation = touch.location(in: sceneView)
+            let results = sceneView.hitTest(touchLocation, types: .existingPlaneUsingExtent)
+            
+            if let hitResult = results.first {
+                let diceScene = SCNScene(named: "art.scnassets/diceCollada.scn")!
+                if let diceNode = diceScene.rootNode.childNode(withName: "Dice", recursively: true) {
+                    diceNode.position = SCNVector3(
+                        x: hitResult.worldTransform.columns.3.x,
+                        y: hitResult.worldTransform.columns.3.y,
+                        z: hitResult.worldTransform.columns.3.z)
+                    // Set the scene to the view
+                    sceneView.scene.rootNode.addChildNode(diceNode)
+                }
+            }
+        }
+    }
 /*
     // Override to create and configure nodes for anchors added to the view's session.
     func renderer(_ renderer: SCNSceneRenderer, nodeFor anchor: ARAnchor) -> SCNNode? {
